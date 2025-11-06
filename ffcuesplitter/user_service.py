@@ -109,8 +109,11 @@ class FileSystemOperations(FFCueSplitter):
             return True
 
         for data in tracks:  # self.audiotracks
+            format = self.kwargs['outputformat']
+            if format == 'alac' or format == 'aac':
+                format = 'm4a'
             track = (f"{str(data['TRACK_NUM']).rjust(2, '0')} - "
-                     f"{data['FILE_TITLE']}.{self.kwargs['outputformat']}")
+                     f"{data['FILE_TITLE']}.{format}")
             pathfile = os.path.join(outputdir, track)
 
             if os.path.exists(pathfile):
@@ -194,6 +197,11 @@ class FileSystemOperations(FFCueSplitter):
                        f'"{args[1]["titletrack"]}" ...')
                 logging.info(msg)
                 self.command_runner(args[0], args[1]['duration'])
+
+            m3u_path = os.path.join(tmpdir, 'Contents.m3u')
+            with open(m3u_path, 'w') as file:
+                logging.info(f'Write Playlist >> "Contents.m3u"')
+                file.write(recipes['m3u_contents'])
 
             logging.info("...done exctracting")
             # You must move the files from within the temporary context

@@ -15,7 +15,7 @@ or from the [command line](https://github.com/jeanslack/FFcuesplitter#using-comm
 ## Features
 
 - Supports many input formats, due to FFmpeg.
-- Convert to Wav, Flac, Ogg, Opus, and Mp3 formats.
+- Convert to WAV, FLAC, Ogg, Opus,  MP3, and M4A (containing AAC, ALAC codecs) formats.
 - Ability to copy source codec and format without re-encoding.
 - Batch mode processing is also available.
 - Accepts both files and directories.
@@ -24,23 +24,70 @@ or from the [command line](https://github.com/jeanslack/FFcuesplitter#using-comm
 - Auto-tag from CUE file data.
 - Features automatic character set detection for CUE files (via [python3-charset-normalizer](https://pypi.org/project/charset-normalizer/)).
 - Ability to remove original file after conversion.
-- Works on Linux, MacOs, FreeBSD, Windows.
+- Works on Linux, macOS, FreeBSD, Windows.
 - It can be used either as a Python module or from the command line.
 
-## Requires
+## Features (branch-specific)
+
++ Convert to ALAC/AAC code with M4A container format for iTunes/Apple Music
++ Support output M3U playlist
++ Simplified logging format, changed same album file name pattern as iTunes/Apple Music
+
+## Requirements
 
 - Python >=3.9
-- [python3-charset-normalizer](https://pypi.org/project/charset-normalizer/)
-- [tqdm](https://pypi.org/project/tqdm/#description)
-- [FFmpeg](https://ffmpeg.org/) *(including ffprobe)*
+- FFmpeg 
 
+## Install
 
-## Using Command Line
+Install dependencies
+
+```sh
+### To install Python
+# [macOS] Install "Xcode Command Line Tools" which includes tools like Python, Git
+xcode-select --install
+# or install Python with Homebrew
+brew install python
+
+# [Windows] If you have Visual Studio installed, you may install optional Python Tools with Visual Studio Installer
+# or install Python with Chocolatey
+choco install python
+
+# or manually download Python from https://www.python.org/downloads/
+# ensure that ffmpeg bin folder is added to enviroment variable PATH
+
+### To install FFmpeg
+# [macOS] Install FFmpeg with Homebrew,
+brew install ffmpeg
+# [Windows] Install FFmpeg with Chocolatey
+choco install ffmpeg
+
+# or manually download FFmpeg from https://www.ffmpeg.org/download.html
+# ensure that FFmpeg bin folder is added to enviroment variable PATH
+
+```
+
+Install this branch of FFcuesplitter 
+
+```sh
+# Checkout/Download repo fuweichins/FFcuesplitter to ~/Documents/GitHub/
+# with git command line
+cd ~/Documents/GitHub/
+git clone https://github.com/fuweichins/FFcuesplitter
+# or with GitHub Desktop app
+
+# Install local python package
+pip3 install ~/Documents/GitHub/FFcuesplitter/
+```
+
+Note: You may need to add python bin path ( e.g. "~/Library/Python/3.9/bin/") to enviroment variable PATH in order to directly use command `ffcuesplitter`. 
+
+## Usage
 
 ```
 ffcuesplitter -i FILENAMES DIRNAMES [FILENAMES DIRNAMES ...]
               [-r]
-              [-f {wav,flac,mp3,ogg,opus}]
+              [-f {wav,flac,mp3,ogg,opus,alac,aac}]
               [-o OUTPUTDIR]
               [-del]
               [-c {author+album,author,album}]
@@ -59,16 +106,28 @@ ffcuesplitter -i FILENAMES DIRNAMES [FILENAMES DIRNAMES ...]
 
 **Examples**
 
-`ffcuesplitter -i 'inputfile_1.cue' 'inputfile_2.cue' 'inputfile_3.cue'`
+To split and convert to `flac` format (default), and save them in current working directory
 
-Batch file processing to split and convert to default audio `flac` format.
+```sh
+ffcuesplitter -i 'my-album.cue'
+```
 
-`ffcuesplitter -i '/User/music/collection/inputfile.cue' -f ogg -o 'my_awesome_tracklist'`
+To split and convert to `alac` codec (with m4a container format) and save them in the `my-album-tracks` directory.
 
-To splits the individual audio tracks into `ogg` format
-and saves them in the `my_awesome_tracklist` directory.
+```sh
+ffcuesplitter -i 'my-album.cue' -f alac -o 'my-album'
+```
+
+To splits the individual audio tracks into `aac` codec (with m4a container format)  and set bitrate of 192kbps
+
+```sh
+ffcuesplitter -i 'my-album.cue' -f aac -o 'my-album(aac)' --ffmpeg-add-params='-b:a 192k'
+```
+
+Notes: when running on macOS, VideoToolbox ALAC/AAC encoders "alac_at"/"aac_at" take prejudice over universal encoders "alac"/"aac".
 
 **For further information and other examples visit the [wiki page](https://github.com/jeanslack/FFcuesplitter/wiki)**
+
 ***
 
 ## Using Python
@@ -87,11 +146,6 @@ and saves them in the `my_awesome_tracklist` directory.
 ```
 
 **For further information and other examples visit the [wiki page](https://github.com/jeanslack/FFcuesplitter/wiki)**
-***
-
-## Installation
-
-`python3 -m pip install ffcuesplitter`
 
 ## License and Copyright
 

@@ -50,6 +50,8 @@ class FFMpeg:
                   'ogg': 'libvorbis -ar 44100',
                   'opus': 'libopus',
                   'mp3': 'libmp3lame -ar 44100',
+                  'aac': 'aac_at -ar 44100' if platform.system() == 'Darwin' else 'aac -ar 44100',
+                  'alac': 'alac_at' if platform.system() == 'Darwin' else 'alac',
                   }
 
     def __init__(self, **kwargs):
@@ -77,8 +79,9 @@ class FFMpeg:
             codec = ''
         else:
             try:
-                self.outsuffix = self.kwargs['outputformat']
-                codec = f'-c:a {FFMpeg.DATACODECS[self.outsuffix]}'
+                format = self.kwargs['outputformat']
+                self.outsuffix = 'm4a' if format in ['alac', 'aac'] else format
+                codec = f'-c:a {FFMpeg.DATACODECS[format]}'
             except KeyError as error:
                 msgerr = f"Unsupported format '{self.outsuffix}'"
                 raise FFCueSplitterError(f'{msgerr}') from error
@@ -98,7 +101,7 @@ class FFMpeg:
         """
         data = []
         meters = {'tqdm': '-progress pipe:1 -nostats -nostdin', 'standard': ''}
-
+        m3u_contents = '#EXTM3U\n\n'
         for track in audiotracks:
             codec, suffix = self.codec_setup(track["FILE"])
             metadata = {'ARTIST': track.get('PERFORMER', ''),
@@ -113,7 +116,7 @@ class FFMpeg:
                         'DISCID': track.get('DISCID', ''),
                         }
             cmd = f'"{self.kwargs["ffmpeg_cmd"]}" '
-            cmd += f' -loglevel {self.kwargs["ffmpeg_loglevel"]}'
+            cmd += f' -hide_banner -loglevel {self.kwargs["ffmpeg_loglevel"]}'
             cmd += f" {meters[self.kwargs['progress_meter']]}"
             fpath = os.path.join(self.kwargs["dirname"], track["FILE"])
             cmd += f' -i "{fpath}"'
@@ -128,12 +131,13 @@ class FFMpeg:
             num = str(track['TRACK_NUM']).rjust(2, '0')
             trk = track["FILE_TITLE"]
             filetitle = 'Untitled' if not sanitize(trk) else trk
-            name = f'{num} - {filetitle}.{suffix}'
+            name = f'{num} {filetitle}.{suffix}'
             cmd += f' "{os.path.join(self.kwargs["tempdir"], name)}"'
             args = (cmd, {'duration': track['DURATION'], 'titletrack': name})
+            m3u_contents += f'#EXTINF:0,{num} - {filetitle}\n{name}\n\n'
             data.append(args)
 
-        return {'recipes': data}
+        return {'recipes': data, 'm3u_contents': m3u_contents}
     # --------------------------------------------------------------#
 
     def command_runner(self, arg, secs):
@@ -188,12 +192,12 @@ class FFMpeg:
                        dynamic_ncols=True
                        )
         progbar.clear()
-        sep = (f'\nFFcuesplitter Command: {cmd}\n'
-               f'=======================================================\n\n')
+        sep = f'\n>>>\n{cmd}\n<<<\n\n'
 
         try:
             with open(self.kwargs['logtofile'], "a", encoding='utf-8') as log:
                 log.write(sep)
+                log.flush()
                 with Popen(cmd,
                            stdout=subprocess.PIPE,
                            stderr=log,
@@ -240,10 +244,11 @@ class FFMpeg:
             None
         """
         makeoutputdirs(self.kwargs['outputdir'])  # Make dirs for output files
-        sep = (f'\nFFcuesplitter Command: {cmd}\n'
+        sep = (f'\n{cmd}\n'
                f'=======================================================\n\n')
         with open(self.kwargs['logtofile'], "a", encoding='utf-8') as log:
             log.write(sep)
+            log.flush()
         try:
             subprocess.run(cmd, check=True, shell=False, encoding='utf8',)
 
